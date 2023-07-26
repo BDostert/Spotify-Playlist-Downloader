@@ -1,16 +1,16 @@
-import json
-from urllib.parse import urlencode
 import spotipy
-import webbrowser
 import requests
 import base64
 import datetime
+import os
+
 from pprint import pprint
 from spotipy.oauth2 import SpotifyClientCredentials
 from pytube import YouTube
 from moviepy.editor import *
-import os
-import re
+from googleapiclient.discovery import build
+from urllib.parse import urlencode
+
 sp = spotipy.Spotify
 
 
@@ -134,12 +134,41 @@ class SpotifyAPI(object):
     '''
 
 class YoutubeAPI(object):
-    def __init__():
-        YT_API_KEY = os.environ.get('YT_API_KEY')
-        pass
+    YT_API_KEY = None
+    serviceName = None
+    version = None
+    
+    def __init__(self, YT_API_KEY, serviceName, version, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.YT_API_KEY = YT_API_KEY
+        self.serviceName = serviceName
+        self.version = version
+
+        
+
+    def get_links(self, vid_ids):
+        completed = []
+        for vid in vid_ids:
+            endpoint = 'https://www.youtube.com/watch?v='
+            completed.append(endpoint + vid)
+        return completed
 
 
-
+    def search_vids(self, queries):
+        #endpoint = 'https://www.googleapis.com/youtube/v3/search'
+        youtube = build(self.serviceName, self.version, developerKey=self.YT_API_KEY)
+        vid_ids = []
+        for query in queries:
+            results = youtube.search().list(
+                part = 'snippet',
+                q = query,
+                maxResults = 1,
+                type = 'video'
+            )
+            response = results.execute()   
+            vid_ids.append(response['items'][0]['id']['videoId'])
+        #pprint(vid_ids)
+        return vid_ids
 
 
 
@@ -158,11 +187,16 @@ class YoutubeAPI(object):
 def main():
     client_id = os.environ.get('SP_CLIENT_ID')
     client_secret   = os.environ.get('SP_CLIENT_SECRET')
+    YT_API_KEY = os.environ.get('YT_API_KEY')
     username = input('Spotify username: ')
     lists = SpotifyAPI(client_id, client_secret).get_user_playlists(username) 
     for i,name in enumerate(lists[1]):
         print(i + 1, name)
     
-    print(SpotifyAPI(client_id, client_secret).get_playlist_tracks(lists[0][int(input('Enter playlist number: '))]) )
+    song_titles = SpotifyAPI(client_id, client_secret).get_playlist_tracks(lists[0][int(input('Enter playlist number: ')) - 1]) 
+    vid_ids = YoutubeAPI(YT_API_KEY,'youtube','v3').search_vids(song_titles)
+    print(YoutubeAPI(YT_API_KEY,'youtube','v3').get_links(vid_ids))
+
+
 
 main()
