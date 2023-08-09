@@ -170,7 +170,29 @@ class YoutubeAPI(object):
         #pprint(vid_ids)
         return vid_ids
 
+    def video_to_audio_conversion(self, links, playlist_name):
+        
+        for link in links:
+            yt = YouTube(link)
+            yt.streams.filter(only_audio=True).first().download(output_path= playlist_name)
+            #.order_by('resolution').desc().first().download()
+            '''
+            video_id = None
+            try:
+                yt = YouTube("https://www.youtube.com/watch?v=" + video_id)
+                audio_stream = yt.streams.filter(only_audio=True).first()
 
+                audio_file = audio_stream.download()
+
+                audio_clip = AudioFileClip(audio_file)
+                audio_clip.write_audiofile(audio_file[:-4] + ".mp3")
+
+                os.remove(audio_file)
+
+                print(f"Conversion complete for {link}!")
+            except Exception as e:
+                print(f"Error for {link}:", e)
+            '''
 
 
 
@@ -188,15 +210,18 @@ def main():
     client_id = os.environ.get('SP_CLIENT_ID')
     client_secret   = os.environ.get('SP_CLIENT_SECRET')
     YT_API_KEY = os.environ.get('YT_API_KEY')
+    #links = ['https://www.youtube.com/watch?v=fJ9rUzIMcZQ','https://www.youtube.com/watch?v=ZHwVBirqD2s']
+
+    
     username = input('Spotify username: ')
     lists = SpotifyAPI(client_id, client_secret).get_user_playlists(username) 
     for i,name in enumerate(lists[1]):
         print(i + 1, name)
-    
-    song_titles = SpotifyAPI(client_id, client_secret).get_playlist_tracks(lists[0][int(input('Enter playlist number: ')) - 1]) 
+    playlist_number = int(input('Enter playlist number: ')) - 1
+    song_titles = SpotifyAPI(client_id, client_secret).get_playlist_tracks(lists[0][playlist_number]) 
     vid_ids = YoutubeAPI(YT_API_KEY,'youtube','v3').search_vids(song_titles)
-    print(YoutubeAPI(YT_API_KEY,'youtube','v3').get_links(vid_ids))
-
+    links = YoutubeAPI(YT_API_KEY,'youtube','v3').get_links(vid_ids)
+    YoutubeAPI(YT_API_KEY,'youtube','v3').video_to_audio_conversion(links, lists[1][playlist_number])
 
 
 main()
