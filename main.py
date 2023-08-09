@@ -146,12 +146,11 @@ class YoutubeAPI(object):
 
         
 
-    def get_links(self, vid_ids):
-        completed = []
+    def search_and_download(self, vid_ids, playlist_name):
         for vid in vid_ids:
             endpoint = 'https://www.youtube.com/watch?v='
-            completed.append(endpoint + vid)
-        return completed
+            yt = YouTube(endpoint + vid)
+            yt.streams.filter(only_audio=True).first().download(output_path= playlist_name)
 
 
     def search_vids(self, queries):
@@ -169,14 +168,7 @@ class YoutubeAPI(object):
             vid_ids.append(response['items'][0]['id']['videoId'])
         #pprint(vid_ids)
         return vid_ids
-
-    def video_to_audio_conversion(self, links, playlist_name):
-        
-        for link in links:
-            yt = YouTube(link)
-            yt.streams.filter(only_audio=True).first().download(output_path= playlist_name)
-            #.order_by('resolution').desc().first().download()
-            '''
+        '''
             video_id = None
             try:
                 yt = YouTube("https://www.youtube.com/watch?v=" + video_id)
@@ -192,7 +184,7 @@ class YoutubeAPI(object):
                 print(f"Conversion complete for {link}!")
             except Exception as e:
                 print(f"Error for {link}:", e)
-            '''
+        '''
 
 
 
@@ -220,8 +212,7 @@ def main():
     playlist_number = int(input('Enter playlist number: ')) - 1
     song_titles = SpotifyAPI(client_id, client_secret).get_playlist_tracks(lists[0][playlist_number]) 
     vid_ids = YoutubeAPI(YT_API_KEY,'youtube','v3').search_vids(song_titles)
-    links = YoutubeAPI(YT_API_KEY,'youtube','v3').get_links(vid_ids)
-    YoutubeAPI(YT_API_KEY,'youtube','v3').video_to_audio_conversion(links, lists[1][playlist_number])
+    YoutubeAPI(YT_API_KEY,'youtube','v3').search_and_download(vid_ids, lists[1][playlist_number])
 
 
 main()
